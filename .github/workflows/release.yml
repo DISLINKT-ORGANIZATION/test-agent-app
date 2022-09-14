@@ -108,6 +108,7 @@ jobs:
           printf "HEROKU_EMAIL=%s\n" ${{ secrets.HEROKU_EMAIL }} >> env.conf
           printf "HEROKU_API_KEY=%s" ${{ secrets.HEROKU_API_KEY }} >> env.conf
           head -5 env.conf
+          docker compose up init
           docker compose up deploy
           docker compose up deploy
           cd ../../deployment/frontend
