@@ -97,6 +97,7 @@ jobs:
           name: agent-app-build-${{ steps.clean_version.outputs._1 }}.jar
           path: target/*.jar
       
+      
       - name: Deploy app to PROD env
         if: github.event_name == 'push' && github.ref_name == 'main'
         run: |
