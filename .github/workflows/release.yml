@@ -107,8 +107,7 @@ jobs:
           echo "GATEWAY_NAME=grumpy-gateway-prod" >> env.conf
           printf "HEROKU_EMAIL=%s\n" ${{ secrets.HEROKU_EMAIL }} >> env.conf
           printf "HEROKU_API_KEY=%s" ${{ secrets.HEROKU_API_KEY }} >> env.conf
-          head -4 .env.conf
-          docker compose up destroy
+          head -4 env.conf
           docker compose up cleanup
           docker compose up init
           cd ../../deployment/backend
