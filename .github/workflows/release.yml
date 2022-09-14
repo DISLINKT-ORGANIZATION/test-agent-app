@@ -101,23 +101,21 @@ jobs:
       - name: Deploy app to PROD env
         if: github.event_name == 'push' && github.ref_name == 'main'
         run: |
-          cd ./deployment/frontend
+          cd ./deployment/backend
           echo "TERRAFORM_BACKEND=grumpy-servers-backend-prod" > env.conf
           echo "APP_NAME=grumpy-servers-prod" >> env.conf
           echo "GATEWAY_NAME=grumpy-gateway-prod" >> env.conf
           printf "HEROKU_EMAIL=%s\n" ${{ secrets.HEROKU_EMAIL }} >> env.conf
           printf "HEROKU_API_KEY=%s" ${{ secrets.HEROKU_API_KEY }} >> env.conf
-          head -4 env.conf
-          docker compose up cleanup
-          docker compose up init
-          cd ../../deployment/backend
-          echo "TERRAFORM_BACKEND=grumpy-servers-backend-prod" > env.conf
-          echo "APP_NAME=grumpy-servers-prod" >> env.conf
-          echo "GATEWAY_NAME=grumpy-gateway-prod" >> env.conf
-          printf "HEROKU_EMAIL=%s\n" ${{ secrets.HEROKU_EMAIL }} >> env.conf
-          printf "HEROKU_API_KEY=%s" ${{ secrets.HEROKU_API_KEY }} >> env.conf
+          head -5 env.conf
           docker compose up deploy
           docker compose up deploy
           cd ../../deployment/frontend
+          echo "TERRAFORM_BACKEND=grumpy-servers-backend-prod" > env.conf
+          echo "APP_NAME=grumpy-servers-prod" >> env.conf
+          echo "GATEWAY_NAME=grumpy-gateway-prod" >> env.conf
+          printf "HEROKU_EMAIL=%s\n" ${{ secrets.HEROKU_EMAIL }} >> env.conf
+          printf "HEROKU_API_KEY=%s" ${{ secrets.HEROKU_API_KEY }} >> env.conf
+          head -5 env.conf
           docker compose up deploy
           docker compose up deploy
