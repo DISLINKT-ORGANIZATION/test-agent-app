@@ -1,7 +1,7 @@
 FROM node:alpine3.11 as build
 
 ARG API_URL="'http://localhost:8090/'"
-ARG FRONTEND_APP_SRC_URL=https://github.com/DISLINKT-ORGANIZATION/agent-fe/archive/refs/tags/v0.4.0.tar.gz
+ARG FRONTEND_APP_SRC_URL=https://github.com/DISLINKT-ORGANIZATION/agent-fe/archive/refs/tags/v0.5.0.tar.gz
 	
 WORKDIR /usr/src/server
 RUN apk --update --no-cache add curl tar && \
