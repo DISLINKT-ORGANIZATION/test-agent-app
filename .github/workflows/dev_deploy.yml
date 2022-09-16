@@ -1,0 +1,101 @@
+name: DevDeploy
+
+on:
+  push:
+    branches: [develop]
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+    secrets:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+  dev_deploy:
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - run: git checkout HEAD^
+
+      - name: Cache Maven Packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Build with Maven
+        run: mvn package --file pom.xml -DskipTests
+
+      - name: Set Up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set Up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Docker Login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker build
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: false
+          secrets: |
+            GIT_AUTH_TOKEN = ${{ secrets.GITHUB_TOKEN }}
+          builder: ${{ steps.buildx.outputs.name }}
+          tags: ${{ secrets.DOCKER_USERNAME }}/agent-app:${{ steps.clean_version.outputs._1 }}
+          load: true
+
+      - name: Docker push
+        id: docker_push
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          secrets: |
+            GIT_AUTH_TOKEN = ${{ secrets.GITHUB_TOKEN }}
+          tags: ${{ secrets.DOCKER_USERNAME }}/agent-app:${{ steps.clean_version.outputs._1 }}
+
+      - name: Upload image
+        uses: ishworkh/docker-image-artifact-upload@v1
+        with:
+          image: ${{ secrets.DOCKER_USERNAME }}/agent-app:${{ steps.clean_version.outputs._1 }}
+
+      - name: Upload Jar Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: agent-app-build-${{ steps.clean_version.outputs._1 }}.jar
+          path: target/*.jar
+      
+      - name: Deploy to PROD environment
+        if: github.event_name == 'push' && github.ref_name == 'develop'
+        run: |
+          cd ./deployment/frontend
+          echo "TERRAFORM_BACKEND=grumpy-servers-backend-dev" > env.conf
+          echo "APP_NAME=grumpy-servers-dev" >> env.conf
+          echo "GATEWAY_NAME=grumpy-gateway-dev" >> env.conf
+          printf "HEROKU_EMAIL=%s\n" ${{ secrets.HEROKU_EMAIL_DEV }} >> env.conf
+          printf "HEROKU_API_KEY=%s" ${{ secrets.HEROKU_API_KEY_DEV }} >> env.conf
+          head -5 env.conf
+          docker compose up destroy
+          cd ../../deployment/backend
+          echo "TERRAFORM_BACKEND=grumpy-servers-backend-dev" > env.conf
+          echo "APP_NAME=grumpy-servers-dev" >> env.conf
+          echo "GATEWAY_NAME=grumpy-gateway-dev" >> env.conf
+          printf "HEROKU_EMAIL=%s\n" ${{ secrets.HEROKU_EMAIL_DEV }} >> env.conf
+          printf "HEROKU_API_KEY=%s" ${{ secrets.HEROKU_API_KEY_DEV }} >> env.conf
+          head -5 env.conf
+          docker compose up deploy
+          docker compose up deploy
+          cd ../../deployment/frontend
+          docker compose up deploy
+          docker compose up deploy
