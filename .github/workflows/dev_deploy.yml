@@ -19,6 +19,16 @@ jobs:
         with:
           fetch-depth: 0
       - run: git checkout HEAD^
+      
+      - name: Create semantic version
+        id: semantic-version
+        uses: paulhatch/semantic-version@v4.0.2
+        with:
+          tag_prefix: "v"
+          major_pattern: "(MAJOR)"
+          minor_pattern: "(MINOR)"
+          format: "${major}.${minor}.${patch}"
+          bump_each_commit: true
 
       - name: Cache Maven Packages
         uses: actions/cache@v1
@@ -52,7 +62,7 @@ jobs:
           secrets: |
             GIT_AUTH_TOKEN = ${{ secrets.GITHUB_TOKEN }}
           builder: ${{ steps.buildx.outputs.name }}
-          tags: ${{ secrets.DOCKER_USERNAME }}/agent-app:${{ steps.clean_version.outputs._1 }}
+          tags: ${{ secrets.DOCKER_USERNAME }}/agent-app:${{ steps.semantic-version.outputs.version }}, ${{ secrets.DOCKER_USERNAME }}/agent-app:latest
           load: true
 
       - name: Docker push
@@ -63,17 +73,17 @@ jobs:
           push: true
           secrets: |
             GIT_AUTH_TOKEN = ${{ secrets.GITHUB_TOKEN }}
-          tags: ${{ secrets.DOCKER_USERNAME }}/agent-app:${{ steps.clean_version.outputs._1 }}
+          tags: ${{ secrets.DOCKER_USERNAME }}/agent-app:${{ steps.semantic-version.outputs.version }}, ${{ secrets.DOCKER_USERNAME }}/agent-app:latest
 
       - name: Upload image
         uses: ishworkh/docker-image-artifact-upload@v1
         with:
-          image: ${{ secrets.DOCKER_USERNAME }}/agent-app:${{ steps.clean_version.outputs._1 }}
+          image: ${{ secrets.DOCKER_USERNAME }}/agent-app:latest
 
       - name: Upload Jar Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: agent-app-build-${{ steps.clean_version.outputs._1 }}.jar
+          name: agent-app-build-${{ steps.semantic-version.outputs.version }}.jar
           path: target/*.jar
       
       - name: Deploy to PROD environment
