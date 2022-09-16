@@ -86,7 +86,7 @@ jobs:
           name: agent-app-build-${{ steps.semantic-version.outputs.version }}.jar
           path: target/*.jar
       
-      - name: Deploy to PROD environment
+      - name: Deploy to DEV environment
         if: github.event_name == 'push' && github.ref_name == 'develop'
         run: |
           cd ./deployment/frontend
@@ -104,7 +104,6 @@ jobs:
           printf "HEROKU_EMAIL=%s\n" ${{ secrets.HEROKU_EMAIL_DEV }} >> env.conf
           printf "HEROKU_API_KEY=%s" ${{ secrets.HEROKU_API_KEY_DEV }} >> env.conf
           head -5 env.conf
-          docker compose up deploy
           docker compose up deploy
           cd ../../deployment/frontend
           docker compose up deploy
